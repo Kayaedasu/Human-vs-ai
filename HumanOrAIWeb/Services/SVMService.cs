@@ -28,7 +28,7 @@ namespace HumanOrAIWeb.Services
         {
             if (!_modelLoaded)
             {
-                return 0.64f;  // SAHTE tahmin
+                return 0.62f;  // SAHTE tahmin
             }
 
             try
