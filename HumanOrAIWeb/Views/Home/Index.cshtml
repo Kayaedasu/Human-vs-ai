@@ -1,0 +1,195 @@
+﻿@{
+    ViewBag.Title = "Makale Özeti AI mı?";
+}
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+<style>
+    body {
+        background: linear-gradient(135deg, #dff1ff 0%, #e3f0ff 20%, #e7eaff 45%, #e8e4ff 70%, #e9ddff 100%);
+        background-attachment: fixed;
+    }
+
+    .textarea-wrapper {
+        position: relative;
+    }
+
+    .inside-buttons {
+        position: absolute;
+        bottom: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 10px;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 6px 14px;
+        border-radius: 10px;
+        border: 1px solid #ddd;
+        box-shadow: 0px 2px 8px rgba(0,0,0,0.1);
+    }
+
+        .inside-buttons button,
+        .inside-buttons label {
+            font-size: 13px;
+            padding: 4px 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            background: white;
+            cursor: pointer;
+        }
+
+    .model-box {
+        margin-top: 20px;
+        padding: 15px;
+        background: white;
+        border-radius: 12px;
+        border: 1px solid #e0e0e0;
+    }
+
+    .progress {
+        height: 14px;
+        border-radius: 10px;
+    }
+
+    .progress-bar {
+        border-radius: 10px;
+    }
+</style>
+
+
+<div class="container mt-5" style="max-width:800px;">
+
+    <h2 class="text-center mb-4">Makale Özeti AI mı, yoksa değil mi?</h2>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    <!-- ================== TEXTAREA + BUTTONS ================== -->
+    <form method="post" asp-action="Predict">
+        <div class="textarea-wrapper">
+            <textarea name="inputText" id="inputText"
+                      class="form-control" rows="7"
+                      placeholder="Makale özeti buraya yapıştır..."
+                      oninput="toggleButtons()"></textarea>
+
+            <div id="insideBtns" class="inside-buttons">
+                <button type="button" onclick="pasteText()">📋 Yapıştır</button>
+                <button type="button" onclick="fillExample()">📄 Örnek</button>
+                <label>
+                    📤 Yükle
+                    <input type="file" hidden onchange="loadFileText(event)">
+                </label>
+            </div>
+        </div>
+
+        <button class="btn btn-primary mt-3 w-100">Tahmin Et</button>
+    </form>
+
+    <!-- ================== RESULTS ================== -->
+    @if (TempData["L"] != null)
+    {
+        float L = float.Parse(TempData["L"].ToString());
+        float S = float.Parse(TempData["S"].ToString());
+        float R = float.Parse(TempData["R"].ToString());
+
+        float avg = (L + S + R) / 3;
+
+        <div class="main-result-box mt-4">
+            <div class="main-result-title">
+                Bu metin yaklaşık %@(avg.ToString("F1")) AI olabilir.
+            </div>
+            <div class="main-result-sub">Aşağıda modellerin detaylı skorlarını görebilirsiniz:</div>
+        </div>
+
+        <!-- LOGISTIC -->
+        <div class="model-box">
+            <div class="model-title">Lojistik Regresyon: @L % AI</div>
+            <div class="progress">
+                <div class="progress-bar bg-primary" role="progressbar" style="width:@($"{L}%")"></div>
+            </div>
+        </div>
+
+        <!-- SVM -->
+        <div class="model-box">
+            <div class="model-title">SVM: @S % AI</div>
+            <div class="progress">
+                <div class="progress-bar bg-info" role="progressbar" style="width:@($"{S}%")"></div>
+            </div>
+        </div>
+
+        <!-- RANDOM FOREST -->
+        <div class="model-box">
+            <div class="model-title">Rastgele Orman: @R % AI</div>
+            <div class="progress">
+                <div class="progress-bar bg-warning" role="progressbar" style="width:@($"{R}%")"></div>
+            </div>
+        </div>
+    }
+
+
+    <!-- ================== HISTORY ================== -->
+    @if (TempData["History"] != null)
+    {
+        var historyList = System.Text.Json.JsonSerializer.Deserialize<List<string>>(TempData["History"].ToString());
+
+        <div class="history-box mt-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h4>Geçmiş</h4>
+                <form method="post" asp-action="DeleteHistory">
+                    <button class="btn btn-danger btn-sm">🗑️ Temizle</button>
+                </form>
+            </div>
+
+            @foreach (var record in historyList)
+            {
+                var p = record.Split("|");
+
+                <div class="history-item">
+                    <strong>📌 Saat:</strong> @p[0].Trim() <br />
+                    <strong>Sonuç:</strong> @p[1].Trim() <br />
+                    <strong>Özet:</strong> @p[2].Trim() <br />
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<script>
+
+    function toggleButtons() {
+        let text = document.getElementById("inputText").value;
+        let panel = document.getElementById("insideBtns");
+        panel.style.display = text.trim().length > 0 ? "none" : "flex";
+    }
+
+    async function pasteText() {
+        try {
+            let t = await navigator.clipboard.readText();
+            document.getElementById("inputText").value = t;
+            toggleButtons();
+        } catch {
+            alert("Panodan yapıştırılamadı.");
+        }
+    }
+
+    function fillExample() {
+        document.getElementById("inputText").value =
+            "Bu çalışma yapay zeka tarafından oluşturulmuş içeriklerin tespit edilmesini amaçlamaktadır...";
+        toggleButtons();
+    }
+
+    function loadFileText(event) {
+        let file = event.target.files[0];
+        if (!file) return;
+
+        let reader = new FileReader();
+        reader.onload = function (e) {
+            document.getElementById("inputText").value = e.target.result;
+            toggleButtons();
+        };
+        reader.readAsText(file);
+    }
+
+</script>
