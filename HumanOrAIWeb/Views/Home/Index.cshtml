@@ -5,11 +5,14 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
 
 <style>
+
+    /* -------- ARKA PLAN (gradient mockup) -------- */
     body {
-        background: linear-gradient(135deg, #dff1ff 0%, #e3f0ff 20%, #e7eaff 45%, #e8e4ff 70%, #e9ddff 100%);
+        background: linear-gradient( 135deg, #dff1ff 0%, #e3f0ff 20%, #e7eaff 45%, #e8e4ff 70%, #e9ddff 100% );
         background-attachment: fixed;
     }
 
+    /* -------- TEXTAREA İÇİ BUTONLAR -------- */
     .textarea-wrapper {
         position: relative;
     }
@@ -26,6 +29,7 @@
         border-radius: 10px;
         border: 1px solid #ddd;
         box-shadow: 0px 2px 8px rgba(0,0,0,0.1);
+        transition: 0.2s ease;
     }
 
         .inside-buttons button,
@@ -36,37 +40,75 @@
             border: 1px solid #ccc;
             background: white;
             cursor: pointer;
+            transition: 0.2s;
         }
 
+
+    /* -------- ANA SONUÇ PANELİ -------- */
+    .main-result-box {
+        margin-top: 35px;
+        padding: 25px;
+        background: #eef6ff;
+        border-left: 6px solid #1a73e8;
+        border-radius: 14px;
+        box-shadow: 0px 4px 14px rgba(0,0,0,0.08);
+    }
+
+    .main-result-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #1a73e8;
+        margin-bottom: 10px;
+    }
+
+    .main-result-sub {
+        font-size: 15px;
+        color: #444;
+    }
+
+
+    /* -------- PROGRESS BAR MODELLER -------- */
     .model-box {
         margin-top: 20px;
         padding: 15px;
-        background: white;
+        background: #ffffff;
         border-radius: 12px;
         border: 1px solid #e0e0e0;
+        box-shadow: 0px 2px 10px rgba(0,0,0,0.05);
     }
 
-    .progress {
-        height: 14px;
-        border-radius: 10px;
+    .model-title {
+        font-weight: 600;
+        margin-bottom: 8px;
     }
 
-    .progress-bar {
-        border-radius: 10px;
+
+    /* -------- GEÇMİŞ PANELİ -------- */
+    .history-box {
+        background: #ffffff;
+        border-radius: 12px;
+        padding: 20px;
+        border: 1px solid #e0e0e0;
+        margin-top: 40px;
+        box-shadow: 0px 2px 10px rgba(0,0,0,0.06);
+    }
+
+    .history-item {
+        padding: 12px 0;
+        border-bottom: 1px solid #ddd;
     }
 </style>
 
-
 <div class="container mt-5" style="max-width:800px;">
 
-    <h2 class="text-center mb-4">Makale Özeti AI mı, yoksa değil mi?</h2>
+    <h2 class="main-title text-center mb-4">Makale Özeti AI mı, yoksa değil mi?</h2>
 
     @if (TempData["Error"] != null)
     {
         <div class="alert alert-danger">@TempData["Error"]</div>
     }
 
-    <!-- ================== TEXTAREA + BUTTONS ================== -->
+    <!-- TEXTAREA + İÇ BUTONLAR -->
     <form method="post" asp-action="Predict">
         <div class="textarea-wrapper">
             <textarea name="inputText" id="inputText"
@@ -87,58 +129,63 @@
         <button class="btn btn-primary mt-3 w-100">Tahmin Et</button>
     </form>
 
-    <!-- ================== RESULTS ================== -->
+
+    <!-- ===================== SONUÇ PANELİ ===================== -->
     @if (TempData["L"] != null)
     {
         float L = float.Parse(TempData["L"].ToString());
         float S = float.Parse(TempData["S"].ToString());
         float R = float.Parse(TempData["R"].ToString());
 
-        float avg = (L + S + R) / 3;
+        float mainScore = (L + S + R) / 3;
 
-        <div class="main-result-box mt-4">
+        <div class="main-result-box">
             <div class="main-result-title">
-                Bu metin yaklaşık %@(avg.ToString("F1")) AI olabilir.
+                Bu metin yaklaşık %@(mainScore.ToString("F1")) AI olabilir.
             </div>
-            <div class="main-result-sub">Aşağıda modellerin detaylı skorlarını görebilirsiniz:</div>
+            <div class="main-result-sub">
+                Aşağıda 3 farklı modelden gelen AI tahmin yüzdelerini görebilirsiniz:
+            </div>
         </div>
 
-        <!-- LOGISTIC -->
         <div class="model-box">
             <div class="model-title">Lojistik Regresyon: @L % AI</div>
             <div class="progress">
-                <div class="progress-bar bg-primary" role="progressbar" style="width:@($"{L}%")"></div>
+                <div class="progress-bar bg-primary" style="width:@L%"></div>
             </div>
         </div>
 
-        <!-- SVM -->
         <div class="model-box">
             <div class="model-title">SVM: @S % AI</div>
             <div class="progress">
-                <div class="progress-bar bg-info" role="progressbar" style="width:@($"{S}%")"></div>
+                <div class="progress-bar bg-info" style="width:@S%"></div>
             </div>
         </div>
 
-        <!-- RANDOM FOREST -->
         <div class="model-box">
             <div class="model-title">Rastgele Orman: @R % AI</div>
             <div class="progress">
-                <div class="progress-bar bg-warning" role="progressbar" style="width:@($"{R}%")"></div>
+                <div class="progress-bar bg-warning" style="width:@R%"></div>
             </div>
         </div>
     }
 
 
-    <!-- ================== HISTORY ================== -->
+    <!-- ===================== GEÇMİŞ PANELİ ===================== -->
     @if (TempData["History"] != null)
     {
         var historyList = System.Text.Json.JsonSerializer.Deserialize<List<string>>(TempData["History"].ToString());
 
-        <div class="history-box mt-4">
+        <div class="history-box">
+
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <h4>Geçmiş</h4>
+
                 <form method="post" asp-action="DeleteHistory">
-                    <button class="btn btn-danger btn-sm">🗑️ Temizle</button>
+                    <button class="btn btn-danger btn-sm"
+                            style="font-size:13px; padding:4px 10px;">
+                        🗑️ Temizle
+                    </button>
                 </form>
             </div>
 
@@ -150,11 +197,16 @@
                     <strong>📌 Saat:</strong> @p[0].Trim() <br />
                     <strong>Sonuç:</strong> @p[1].Trim() <br />
                     <strong>Özet:</strong> @p[2].Trim() <br />
+                    <span class="text-muted">
+                        L:@p[3].Trim() | S:@p[4].Trim() | RF:@p[5].Trim()
+                    </span>
                 </div>
             }
         </div>
     }
+
 </div>
+
 
 <script>
 

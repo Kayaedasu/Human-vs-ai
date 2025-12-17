@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using HumanOrAIWeb.Services;
 using System.Text.Json;
+using System.Globalization;
+
 
 namespace HumanOrAIWeb.Controllers
 {
@@ -27,13 +29,15 @@ namespace HumanOrAIWeb.Controllers
 
             var result = _predict.PredictAsync(inputText).Result;
 
-            float L = result["logistic"];
-            float S = result["svm"];
-            float R = result["rf"];
+            float L = result["logistic"] / 10;
+            float S = result["svm"] / 10;
+            float R = result["rf"]/10 ;
 
-            TempData["L"] = L.ToString("F1");
-            TempData["S"] = S.ToString("F1");
-            TempData["R"] = R.ToString("F1");
+
+            TempData["L"] = L.ToString("F1", CultureInfo.InvariantCulture);
+            TempData["S"] = S.ToString("F1", CultureInfo.InvariantCulture);
+            TempData["R"] = R.ToString("F1", CultureInfo.InvariantCulture);
+
 
             // Özet için
             string summary = inputText.Length > 80 ? inputText[..80] + "..." : inputText;
